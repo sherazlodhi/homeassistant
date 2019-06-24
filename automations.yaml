@@ -1,0 +1,139 @@
+- id: '1527092015770'
+  alias: Azan
+  trigger:
+  - minutes: /1
+    platform: time_pattern
+  condition:
+  - condition: template
+    value_template: "{% for state in states.sensor -%}\n{%if (state.state_with_unit.split(\"\
+      :\")[0] | int== as_timestamp(now())  | timestamp_custom(\"%H\") | int ) and\n\
+      \  (state.state_with_unit.split(\":\")[1] | int == as_timestamp(now())  | timestamp_custom(\"\
+      %M\") | int)-%}\nTrue\n{%endif-%}\n{%- endfor-%}"
+  action:
+  - data:
+      entity_id: media_player.family_room_speaker
+      media_content_id: http://www.islamcan.com/audio/adhan/azan1.mp3
+      media_content_type: mp3
+    service: media_player.play_media
+  - data:
+      entity_id: automation.azan
+    service: automation.turn_off
+  - alias: ''
+    data:
+      entity_id: media_player.family_room_tv
+    service: media_player.media_play_pause
+  - data:
+      entity_id: media_player.family_room_speaker
+      volume_level: '1'
+    service: media_player.volume_set
+- id: '1527099567415'
+  alias: Wind
+  trigger:
+  - above: '10'
+    entity_id: sensor.weather_wind_speed
+    platform: numeric_state
+  condition: []
+  action:
+  - data:
+      message: Today, its foretasted to be windy. It's better to shut all windows
+    service: tts.google_say
+- id: '1527100777891'
+  alias: Rain
+  trigger:
+  - above: '3'
+    entity_id: sensor.weather_precipitation
+    platform: numeric_state
+  condition: []
+  action:
+  - data:
+      message: It might rain today
+    service: tts.google_say
+- id: '1527208489761'
+  alias: Azan Automation On/Off
+  trigger:
+  - at: '3:00'
+    platform: time
+  - at: '12:00'
+    platform: time
+  - at: '15:00'
+    platform: time
+  - at: '17:00'
+    platform: time
+  - at: '19:00'
+    platform: time
+  - at: '20:00'
+    platform: time
+  condition: []
+  action:
+  - data:
+      entity_id: automation.azan
+    service: automation.turn_on
+- id: '1531686216205'
+  alias: Air Quality
+  trigger:
+  - at: '8:30'
+    platform: time
+  - at: '10:00'
+    platform: time
+  - at: '13:00'
+    platform: time
+  - at: '16:00'
+    platform: time
+  - at: '21:00'
+    platform: time
+  - at: '20:00'
+    platform: time
+  - event_data:
+      announcement: 'true'
+    event_type: announcequality
+    platform: event
+  condition: []
+  action:
+  - data_template:
+      cache: false
+      entity_id: media_player.family_room_speaker
+      message: PM2.5 is {{states('sensor.nova_pm25')}}, and PM10 is {{states('sensor.nova_pm10')}}
+    service: tts.google_say
+- id: '1532123688761'
+  alias: Left Office
+  trigger:
+  - event_data: {}
+    event_type: leftoffice
+    platform: event
+  condition: []
+  action:
+  - data:
+      message: Hello, This is just to tell you that xyz has left the office
+    service: tts.google_say
+- id: '1560603348331'
+  alias: Turn Off tv in 20 minutes
+  trigger:
+  - entity_id: media_player.family_room_tv
+    platform: state
+    to: playing
+  condition:
+  - condition: template
+    value_template: '{{states.media_player.family_room_tv.attributes.app_name  ==
+      "YouTube"}}'
+  action:
+  - delay: 00:20:00
+  - data:
+      entity_id: media_player.family_room_speaker
+      message: Twenty minutes have passed TV will turn off
+    service: tts.google_translate_say
+  - alias: ''
+    data:
+      entity_id: media_player.family_room_tv
+    service: media_player.turn_off
+- id: '1560717847094'
+  alias: webhookcall
+  trigger:
+    event_type: ifttt_webhook_received
+    platform: event
+    event_data:
+      action: call_service
+  action:
+    service_template: '{{ trigger.event.data.service }}'
+    data_template:
+      entity_id: '{{ trigger.event.data.entity_id }}'
+      message: '{{trigger.event.data.message}}'
